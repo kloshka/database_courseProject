@@ -86,7 +86,7 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    avatar_url = Column(String(255), nullable=True)
+    avatar_url = Column(String(255), nullable=False, default="/default-avatar.png", server_default="'/default-avatar.png'")
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     
@@ -220,7 +220,6 @@ class Report(Base):
     resolved_at = Column(DateTime, nullable=True)
     resolved_by = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
-    # Отношения
     reporter = relationship("User", foreign_keys=[reporter_user_id], back_populates="reports_filed")
     reported = relationship("User", foreign_keys=[reported_user_id], back_populates="reports_received")
     resolver = relationship("User", foreign_keys=[resolved_by], back_populates="reports_resolved")

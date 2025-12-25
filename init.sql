@@ -1,6 +1,6 @@
 -- =============================================
 -- СИСТЕМА УПРАВЛЕНИЯ БИБЛИОТЕКОЙ АНИМЕ И МАНГИ
--- Всего: 15 таблиц
+-- Всего: 13 таблиц
 -- =============================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -318,63 +318,22 @@ CREATE TABLE reports (
 
 COMMENT ON TABLE reports IS 'Жалобы пользователей на контент (система модерации)';
 
--- =============================================
--- 14. ТАБЛИЦА: import_batches
--- =============================================
-CREATE TABLE import_batches (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    entity_type VARCHAR(20) NOT NULL CHECK (entity_type IN ('title', 'user', 'review')),
-    total_records INTEGER NOT NULL,
-    successful_records INTEGER DEFAULT 0,
-    failed_records INTEGER DEFAULT 0,
-    config JSONB NOT NULL,
-    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    skipped_records INTEGER DEFAULT 0,
-    completed_at TIMESTAMP,
-    status VARCHAR(30) NOT NULL CHECK (status IN ('processing', 'completed', 'failed', 'partial_success', 'completed_with_skipped'))
-);
-
-COMMENT ON TABLE import_batches IS 'Метаинформация о партиях импорта';
-
--- =============================================
--- 15. ТАБЛИЦА: import_errors
--- =============================================
-CREATE TABLE import_errors (
-    id BIGSERIAL PRIMARY KEY,
-    import_batch_id UUID NOT NULL,
-    entity_type VARCHAR(20) NOT NULL CHECK (entity_type IN ('title', 'user', 'review')),
-    entity_data JSONB NOT NULL,
-    error_type VARCHAR(50) NOT NULL,
-    error_message TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT fk_import_errors_batch 
-        FOREIGN KEY (import_batch_id) 
-        REFERENCES import_batches(id) 
-        ON DELETE CASCADE
-);
-
-COMMENT ON TABLE import_errors IS 'Логирование ошибок при батчевом импорте';
 
 -- =============================================
 -- ИНДЕКСЫ ДЛЯ ПРОИЗВОДИТЕЛЬНОСТИ
 -- =============================================
 
 -- Индексы для таблицы titles
-CREATE INDEX idx_titles_status ON titles(status);
-CREATE INDEX idx_titles_rating ON titles(average_rating DESC);
-CREATE INDEX idx_titles_start_date ON titles(start_date);
-CREATE INDEX idx_titles_canonical_lower_btree ON titles (lower(canonical_title));
-CREATE INDEX idx_titles_canonical_trgm_gin ON titles USING gin (canonical_title gin_trgm_ops);
-CREATE INDEX idx_titles_russian_trgm_gin ON titles USING gin (russian_title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_titles_status ON titles(status);
+CREATE INDEX IF NOT EXISTS idx_titles_rating ON titles(average_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_titles_start_date ON titles(start_date);
+CREATE INDEX IF NOT EXISTS idx_titles_canonical_btree ON titles (canonical_title);
+CREATE INDEX IF NOT EXISTS idx_titles_canonical_lower_btree ON titles (lower(canonical_title));
+CREATE INDEX IF NOT EXISTS idx_titles_canonical_trgm_gin ON titles USING gin (canonical_title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_titles_russian_trgm_gin ON titles USING gin (russian_title gin_trgm_ops);
 
 -- Индекс для audit_log
 CREATE INDEX idx_audit_log_timestamp ON audit_log(event_timestamp DESC);
-
--- Индексы для импорта
-CREATE INDEX idx_import_batches_created ON import_batches(started_at DESC);
-CREATE INDEX idx_import_errors_batch ON import_errors(import_batch_id);
-CREATE INDEX idx_import_errors_type ON import_errors(error_type);
 
 -- =============================================
 -- ФУНКЦИИ

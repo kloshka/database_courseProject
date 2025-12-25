@@ -1,4 +1,3 @@
-# app/schemas.py
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
@@ -14,7 +13,7 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
-    avatar_url: Optional[str] = None
+    avatar_url: Optional[str] = "/default-avatar.png"
     created_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +90,12 @@ class TitleUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
+    @model_validator(mode="after")
+    def check_dates(self):
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("Дата окончания не может быть раньше даты начала")
+        return self
+
 class TitleResponse(TitleBase):
     id: int
     average_rating: Optional[Decimal] = None
@@ -132,13 +137,6 @@ class AuditLogResponse(BaseModel):
     description: str
     changes: Optional[Dict[str, Any]] = None
     model_config = ConfigDict(from_attributes=True)
-
-class BatchImportConfig(BaseModel):
-    """Параметры батчевой загрузки"""
-    skip_duplicates: bool = Field(True, description="Пропускать дубликаты (по canonical_title)")
-    on_conflict: str = Field("skip", pattern="^(skip|update)$", description="Действие при конфликте: skip - пропустить, update - обновить")
-    log_errors: bool = Field(True, description="Логировать ошибки в отдельную таблицу")
-    batch_size: int = Field(100, ge=1, le=1000, description="Размер пакета для обработки")
 
 class UserRankResponse(BaseModel):
     user_id: int

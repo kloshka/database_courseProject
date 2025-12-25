@@ -18,7 +18,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Пользователь с таким username или email уже существует")
     
     hashed = get_password_hash(user.password)
-    new_user = models.User(username=user.username, email=user.email, password_hash=hashed)
+    new_user = models.User(username=user.username, email=user.email, password_hash=hashed, avatar_url="/default-avatar.png")
     
     try:
         db.add(new_user)
